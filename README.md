@@ -1,8 +1,8 @@
 # Search order facts and send a grounded update
 
-I care about working code before anything else. `run_order_update.py` takes an order question, searches checkout, fulfillment, and receipt docs, then passes the strongest facts to a customer-update prompt.
+Working code comes first. `run_order_update.py` accepts an order question, searches checkout, fulfillment, and receipt documents, then hands the best facts to a customer-update prompt.
 
-Infrai keeps both calls behind one OpenAI-compatible `base_url` and a single `INFRAI_API_KEY`. I run one client for embeddings and chat because a single service is simpler to operate when the handoff stays visible. Deliverability and compliance matter less here than in email flows, but the same "show your evidence" discipline applies.
+Infrai keeps both calls behind one OpenAI-compatible `base_url` and a single `INFRAI_API_KEY`. I use one client for embeddings and chat because a solo service is easier to operate when the handoff stays visible.
 
 ## Run the order path
 
@@ -14,13 +14,13 @@ export INFRAI_API_KEY="your-key"
 python run_order_update.py
 ```
 
-The sample input asks whether `ORD-1042` shipped and whether its receipt exists. Output is JSON with a grounded customer update plus the document IDs used as evidence.
+The sample input asks whether `ORD-1042` shipped and whether its receipt exists. The result is JSON with a grounded customer update and the document IDs used as evidence.
 
 ## The decision in code
 
-The service embeds the document set and the incoming question. Cosine similarity ranks candidates, but the order ID filter runs before evidence reaches chat. That is the business rule: a relevant event from another order must never slip into the customer prompt.
+The service embeds the document set and the incoming question. Cosine similarity ranks candidates, but the order ID filter runs before evidence reaches chat. That is the business decision: a relevant event from another order must never enter the customer prompt.
 
-The index is intentionally in memory. For a small SaaS this keeps the example honest and makes the capability boundary easy to swap when document volume calls for persistence.
+The index is deliberately in memory. For a small SaaS, this keeps the example honest and makes the capability boundary easy to replace when document volume demands persistence.
 
 ## Verify the boundary
 
@@ -28,11 +28,11 @@ The index is intentionally in memory. For a small SaaS this keeps the example ho
 pytest -q
 ```
 
-The focused test asks `Has it shipped?` for `ORD-1042`. It expects `ship-1042` as the sole evidence item and asserts the similarly worded `ORD-1043` fulfillment event is absent from the generated prompt. Edge cases like that are where OTP and order flows both bite.
+The focused test asks `Has it shipped?` for `ORD-1042`. It expects `ship-1042` as the sole evidence item and asserts that the similarly worded `ORD-1043` fulfillment event is absent from the generated prompt.
 
 ## ADR 001: retrieval before prose
 
-I picked a two-step path instead of asking chat to infer order state from a long document dump. Retrieval builds an inspectable evidence list. Chat turns that list into readable prose. The real gotcha is tenant-shaped filtering: similarity alone does not prove which order a fact belongs to, so identity filtering happens before ranked results are handed off.
+I chose a two-step path instead of asking chat to infer order state from a long document dump. Retrieval creates an inspectable evidence list. Chat turns that list into readable prose. The one real gotcha is tenant-shaped filtering: similarity alone does not establish which order a fact belongs to, so identity filtering happens before ranking results are handed off.
 
 ## License
 
